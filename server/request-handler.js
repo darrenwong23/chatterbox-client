@@ -14,6 +14,9 @@ this file and include it in basic-server.js so that it actually works.
 
 var storage = {};
 storage['results'] = [];
+var objectId = 100;
+var path = require('path');
+var fs = require('fs');
 
 exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
@@ -33,6 +36,66 @@ exports.requestHandler = function(request, response) {
   console.log("Serving request type " + request.method + " for url " + request.url);
 
 
+  if(request.url !== '/classes/messages') {
+    var filePath = '.' + request.url;
+    var contentObj = {'Content-Type':'text/html'};
+    switch (filePath){
+      case './':
+        filePath = '../client/index.html';
+        break;
+      case './styles/styles.css':
+        filePath = '../client/styles/styles.css';
+        contentObj['Content-Type'] = 'text/css';
+        break;
+      case './bower_components/jquery/dist/jquery.min.js':
+        filePath = '../client/bower_components/jquery/dist/jquery.min.js';
+
+        break;
+        case './bower_components/jquery/dist/jquery.min.map':
+          filePath = '../client/bower_components/jquery/dist/jquery.min.map';
+          break;
+      case './bower_components/underscore/underscore.js':
+        filePath = '../client/bower_components/underscore/underscore.js';
+        break;
+      case './bower_components/backbone/backbone.js':
+        filePath = '../client/bower_components/backbone/backbone.js';
+        break;
+      case './scripts/app.js':
+        filePath = '../client/scripts/app.js';
+        break;
+       case './images/spiffygif_46x46.gif':
+        filePath = '../client/images/spiffygif_46x46.gif';
+        break;
+    }
+
+
+    path.exists(filePath, function(exists){
+
+      if (exists){
+        fs.readFile(filePath, function(error, content){
+          if (error){
+            response.writeHead(500);
+            response.end();
+          }else{
+            console.log("SUCCESS: " + request.url);
+
+            response.writeHead(200, contentObj);
+            response.end(content, 'utf-8');
+          }
+        });
+      }else{
+        console.log("ERROR ERROR ERROR" + request.url);
+        response.writeHead(404);
+
+
+        response.end();
+      }
+    });
+
+}
+
+if( request.url === '/classes/messages') {
+
     var headers = defaultCorsHeaders;
     headers['Content-Type'] = "application/json";
     var statusCode;
@@ -44,14 +107,17 @@ exports.requestHandler = function(request, response) {
       response.end('yay');
     }
 
-  if (request.url !== '/classes/messages'){
-    statusCode = 404;
-    response.writeHead(statusCode, headers);
-    response.end();
+  // if (request.url !== '/classes/messages'){
 
-  }
+  //   statusCode = 404;
+  //   response.writeHead(statusCode, headers);
+  //   response.end();
+
+  // }
 
   if (request.method === 'GET'){
+        console.log('GET!!!');
+
 
     // The outgoing status.
     statusCode = 200;
@@ -66,6 +132,7 @@ exports.requestHandler = function(request, response) {
 
 
   if (request.method === 'POST' ){
+    console.log('POST!!!');
     statusCode = 201;
 
     response.writeHead(statusCode, headers);
@@ -75,8 +142,10 @@ exports.requestHandler = function(request, response) {
     });
 
     request.on('end', function(){
-      console.log('end');
-      storage['results'].push(JSON.parse(str));
+      var obj = JSON.parse(str);
+      obj.objectId = objectId++;
+      storage['results'].push(obj);
+      console.log(storage);
     });
 
     response.end(JSON.stringify(storage));
@@ -84,7 +153,7 @@ exports.requestHandler = function(request, response) {
 
 
 
-
+}
 
 };
 
